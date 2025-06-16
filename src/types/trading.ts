@@ -49,3 +49,56 @@ export interface DerivAccount {
   loginId: string;
   isConnected: boolean;
 }
+
+export interface AutoTradingBot extends BotConfig {
+  autoExecution: boolean;
+  minConfidence: number;
+  maxDailyTrades: number;
+  tradingHours: {
+    start: string;
+    end: string;
+  };
+  riskManagement: RiskManagement;
+  performance: BotPerformance;
+  status: "ACTIVE" | "PAUSED" | "STOPPED";
+  lastTrade?: Date;
+}
+
+export interface RiskManagement {
+  maxDrawdown: number;
+  stopLossPercent: number;
+  takeProfitPercent: number;
+  maxConsecutiveLosses: number;
+  dailyLossLimit: number;
+}
+
+export interface BotPerformance {
+  totalTrades: number;
+  winRate: number;
+  totalProfit: number;
+  todayTrades: number;
+  consecutiveLosses: number;
+  maxDrawdown: number;
+}
+
+export interface AutoTradeExecution {
+  id: string;
+  botId: string;
+  signalId: string;
+  symbol: string;
+  type: "CALL" | "PUT";
+  amount: number;
+  entryPrice: number;
+  executionTime: Date;
+  status: "PENDING" | "EXECUTED" | "CANCELLED" | "FAILED";
+  result?: "WIN" | "LOSS";
+  profit?: number;
+}
+
+export enum TradingStrategy {
+  MARTINGALE = "MARTINGALE",
+  ANTI_MARTINGALE = "ANTI_MARTINGALE",
+  FIBONACCI = "FIBONACCI",
+  FIXED_AMOUNT = "FIXED_AMOUNT",
+  PERCENTAGE_RISK = "PERCENTAGE_RISK",
+}

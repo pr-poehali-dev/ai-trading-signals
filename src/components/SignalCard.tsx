@@ -1,17 +1,28 @@
 import { TradingSignal } from "@/types/trading";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 
 interface SignalCardProps {
   signal: TradingSignal;
+  showAutoExecute?: boolean;
+  onAutoExecute?: (signal: TradingSignal) => void;
 }
 
-const SignalCard = ({ signal }: SignalCardProps) => {
+const SignalCard = ({
+  signal,
+  showAutoExecute = false,
+  onAutoExecute,
+}: SignalCardProps) => {
+  const getTypeColor = (type: string) => {
+    return type === "CALL" ? "bg-green-600" : "bg-red-600";
+  };
+
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "bg-green-500";
-    if (confidence >= 70) return "bg-yellow-500";
-    return "bg-red-500";
+    if (confidence >= 85) return "text-green-400";
+    if (confidence >= 70) return "text-yellow-400";
+    return "text-orange-400";
   };
 
   const getTrendIcon = (trend: string) => {
@@ -26,48 +37,64 @@ const SignalCard = ({ signal }: SignalCardProps) => {
   };
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-white text-lg">{signal.symbol}</CardTitle>
-          <Badge variant={signal.type === "CALL" ? "default" : "destructive"}>
-            {signal.type}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-slate-300">Уверенность</span>
-          <div className="flex items-center gap-2">
+    <Card className="bg-slate-800 border-slate-700 hover:border-slate-600 transition-colors">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="font-semibold">
+              {signal.symbol}
+            </Badge>
+            <Badge className={getTypeColor(signal.type)}>{signal.type}</Badge>
+            <div className="flex items-center gap-1">
+              <Icon name={getTrendIcon(signal.marketTrend)} size={16} />
+              <span className="text-xs text-slate-400">
+                {signal.marketTrend}
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
             <div
-              className={`w-2 h-2 rounded-full ${getConfidenceColor(signal.confidence)}`}
-            />
-            <span className="text-white font-semibold">
+              className={`text-lg font-bold ${getConfidenceColor(signal.confidence)}`}
+            >
               {signal.confidence}%
+            </div>
+            <div className="text-xs text-slate-400">{signal.expiryTime}м</div>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <span className="text-slate-400 text-sm">Цена входа: </span>
+            <span className="text-white font-semibold">
+              {signal.entryPrice.toFixed(5)}
             </span>
           </div>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-slate-300">Тренд</span>
-          <div className="flex items-center gap-2">
-            <Icon name={getTrendIcon(signal.marketTrend)} size={16} />
-            <span className="text-white">{signal.marketTrend}</span>
+          <div className="text-xs text-slate-400">
+            {signal.timestamp.toLocaleTimeString()}
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <span className="text-slate-300">Экспирация</span>
-          <span className="text-white">{signal.expiryTime} мин</span>
-        </div>
+        <p className="text-slate-300 text-sm mb-3">{signal.analysis}</p>
 
-        <div className="pt-2 border-t border-slate-700">
-          <p className="text-slate-300 text-sm">{signal.analysis}</p>
-        </div>
-
-        <div className="text-xs text-slate-400">
-          {signal.timestamp.toLocaleTimeString()}
-        </div>
+        {showAutoExecute && signal.confidence >= 80 && (
+          <div className="flex items-center justify-between pt-3 border-t border-slate-700">
+            <div className="flex items-center gap-2">
+              <Icon name="Zap" size={16} className="text-yellow-400" />
+              <span className="text-sm text-yellow-400 font-medium">
+                Высокое качество сигнала
+              </span>
+            </div>
+            {onAutoExecute && (
+              <Button
+                size="sm"
+                className="bg-yellow-600 hover:bg-yellow-700"
+                onClick={() => onAutoExecute(signal)}
+              >
+                Автосделка
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

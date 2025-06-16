@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { DerivAccount, MarketData } from "@/types/trading";
+import {
+  DerivAccount,
+  MarketData,
+  AutoTradeExecution,
+  TradingSignal,
+} from "@/types/trading";
 
 export const useDerivAPI = () => {
   const [account, setAccount] = useState<DerivAccount | null>(null);
@@ -7,6 +12,7 @@ export const useDerivAPI = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTrades, setActiveTrades] = useState<AutoTradeExecution[]>([]);
 
   const connect = useCallback(async (apiToken: string, appId: string) => {
     setIsLoading(true);
@@ -69,6 +75,75 @@ export const useDerivAPI = () => {
     setMarketData([]);
   }, []);
 
+  const executeAutoTrade = useCallback(
+    async (
+      signal: TradingSignal,
+      amount: number,
+      botId: string,
+    ): Promise<AutoTradeExecution> => {
+      const trade: AutoTradeExecution = {
+        id: Math.random().toString(36).substr(2, 9),
+        botId,
+        signalId: signal.id,
+        symbol: signal.symbol,
+        type: signal.type,
+        amount,
+        entryPrice: signal.entryPrice,
+        executionTime: new Date(),
+        status: "PENDING",
+      };
+
+      try {
+        // Симуляция исполнения ордера
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        trade.status = "EXECUTED";
+        setActiveTrades((prev) => [...prev, trade]);
+
+        // Симуляция результата через время экспирации
+        setTimeout(() => {
+          const success = Math.random() > 0.4; // 60% винрейт
+          const profit = success ? amount * 0.8 : -amount;
+
+          setActiveTrades((prev) =>
+            prev.map((t) =>
+              t.id === trade.id
+                ? { ...t, result: success ? "WIN" : "LOSS", profit }
+                : t,
+            ),
+          );
+
+          // Обновляем баланс
+          if (account) {
+            setAccount((prev) =>
+              prev ? { ...prev, balance: prev.balance + profit } : null,
+            );
+          }
+        }, signal.expiryTime * 60000);
+
+        return trade;
+      } catch (err) {
+        trade.status = "FAILED";
+        throw err;
+      }
+    },
+    [account],
+  );
+
+  const startAutoBot = useCallback(async (botId: string) => {
+    console.log(`Starting auto bot ${botId}`);
+    // Логика запуска автобота
+  }, []);
+
+  const stopAutoBot = useCallback(async (botId: string) => {
+    console.log(`Stopping auto bot ${botId}`);
+    // Логика остановки автобота
+  }, []);
+
+  const getActivePositions = useCallback(() => {
+    return activeTrades.filter((trade) => !trade.result);
+  }, [activeTrades]);
+
   return {
     account,
     marketData,
@@ -77,5 +152,10 @@ export const useDerivAPI = () => {
     error,
     connect,
     disconnect,
+    executeAutoTrade,
+    startAutoBot,
+    stopAutoBot,
+    getActivePositions,
+    activeTrades,
   };
 };
